@@ -45,19 +45,26 @@ int main() {
 	lua_State *lua = luaL_newstate();
 	luaL_openlibs(lua);
 
-	/* double a = calculate_file("C:/Projects/cinamon/source/test.cn", lua); */
-	/* double b = calculate_file("C:/Projects/cinamon/source/test.generated.c", lua); */
-	/* printf("a = %f, b = %f\n", (float)a, (float)b); */
-
 	srand(time(0));
 	int max_rand_scalar = 9;
-	for (int nscalars = 2; nscalars < 30; ++nscalars) {
-		for (int iteration = 0; iteration < 40; ++iteration) {
-			FILE* out_file = fopen("C:/Projects/cinamon/source/test.cn", "w");
+	for (int nscalars = 3; nscalars < 100; ++nscalars) {
+		for (int iteration = 0; iteration < 30; ++iteration) {
+            int itry = 0;
+            FILE* out_file = 0;
+            do {
+                out_file = fopen("C:/Users/vsych/Documents/personal_projects/cinamon/source/test.cn", "w");
+                ++itry;
+            } while (!out_file && itry < 1000);
 			assert(out_file);
 
-			int scalar = rand() % (max_rand_scalar + 1);
-			/* printf("%d", scalar); */
+            int nparens = 0;
+            int paren_chance = 40;
+            int rparen_chance = 50;
+			int scalar = (rand() % max_rand_scalar) + 1;
+            if ((rand() % 101) <= paren_chance) {
+                fprintf(out_file, "(");
+                ++nparens;
+            }
 			fprintf(out_file, "%d", scalar);
 			for (int iscalar = 1; iscalar < nscalars; ++iscalar) {
 				scalar = rand() % (max_rand_scalar + 1);
@@ -65,28 +72,43 @@ int main() {
 				int ioperator = rand() % (sizeof(operators) / sizeof(*operators) - 1);
 				char operator = operators[ioperator];
 
-				/* printf(" %c %d", operator, scalar); */
-				fprintf(out_file, " %c %d", operator, scalar);
+                char* lparen_str = "";
+                char* rparen_str = "";
+                if ((rand() % 101) <= paren_chance) {
+                    if (nparens && (rand() % 101) <= rparen_chance) {
+                        rparen_str = ")";
+                        --nparens;
+                    } else {
+                        lparen_str = "(";
+                        ++nparens;
+                    }
+                }
+				fprintf(out_file, " %c %s%d%s", operator, lparen_str, scalar, rparen_str);
 			}
+
+            for (int i = 0; i < nparens; ++i) {
+                fprintf(out_file, ")");
+            }
 			
-			/* printf("\n"); */
 			fclose(out_file);
 
-			int result = system("C:/Projects/cinamon/build/cinamon.exe C:/Projects/cinamon/source/test.cn > C:/Projects/cinamon/source/test.generated.c");
+			int result = system("C:/Users/vsych/Documents/personal_projects/cinamon/build/cinamon.exe C:/Users/vsych/Documents/personal_projects/cinamon/source/test.cn > C:/Users/vsych/Documents/personal_projects/cinamon/source/test.generated.c");
 			assert(!result);
 
-			double a = calculate_file("C:/Projects/cinamon/source/test.cn", lua);
-			double b = calculate_file("C:/Projects/cinamon/source/test.generated.c", lua);
+			double a = calculate_file("C:/Users/vsych/Documents/personal_projects/cinamon/source/test.cn", lua);
+			double b = calculate_file("C:/Users/vsych/Documents/personal_projects/cinamon/source/test.generated.c", lua);
 			double diff = a - b;
 			diff = diff < 0 ? -diff : diff;
 			if (diff > 0.00000001) {
-				char* expression = load_text_file("C:/Projects/cinamon/source/test.cn");
+				char* expression = load_text_file("C:/Users/vsych/Documents/personal_projects/cinamon/source/test.cn");
 				printf("miss: scalars = %d, a = %f, b = %f, expr = %s\n", nscalars, a, b, expression);
 				free(expression);
 			}
 		}
 	}
 
+    printf("END\n");
+	getchar();
 	lua_close(lua);
 	return 0;
 }
